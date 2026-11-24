@@ -1,5 +1,5 @@
 // Offline cache voor de eigen bestanden. Externe verzoeken worden niet onderschept.
-const CACHE = "kostprijs-v10";
+const CACHE = "kostprijs-v13";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).catch(() => {})); self.skipWaiting(); });
 self.addEventListener("activate", e => {
