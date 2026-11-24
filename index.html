@@ -189,7 +189,6 @@ document.getElementById("gateForm").addEventListener("submit",function(e){
     <label class="chk"><input type="checkbox" id="pref"> Verhoogde tegemoetkoming</label>
     <label class="chk"><input type="checkbox" id="kid"> Kind jonger dan 5 jaar (art. 11: 7 jaar)</label>
     <label class="chk"><input type="checkbox" id="urg"> Dringend: nacht, weekend of feestdag (art. 26)</label>
-    <label class="chk" id="ct30Wrap" hidden><input type="checkbox" id="ct30"> CT thorax-abdomen of hals-thorax-abdomen &lt; 30 dagen geleden (PET-CT → 459911)</label>
     <label class="chk" id="echoWrap" hidden><input type="checkbox" id="echoElders"> Vandaag al een echo aangerekend door een radioloog (elders)</label>
     <label class="chk" id="gmdWrap"><input type="checkbox" id="gmd"> Tot 24 jaar met GMD</label>
     <label class="chk" id="firstWrap" hidden><input type="checkbox" id="first" checked> Eerste onderzoek tijdens deze opname</label>
@@ -349,7 +348,6 @@ function calc(){
   const out=$("out"), amb=state.mode==="amb", items=state.items;
   $("gmdWrap").hidden=!amb; $("firstWrap").hidden=amb; $("hospWrap").hidden=amb;
   $("echoWrap").hidden=!items.some(it=>isEcho(it.e));
-  $("ct30Wrap").hidden=!items.some(it=>it.e.a==="459896");
   if(!items.length){ out.innerHTML='<p class="empty">Voeg een of meer onderzoeken toe om de kostprijs te berekenen.</p>'; return; }
   const pref=$("pref").checked, acc=$("acc").checked, kid=$("kid").checked, gmd=$("gmd").checked, first=$("first").checked,
         urg=$("urg").checked, echoElders=$("echoElders").checked;
@@ -404,18 +402,10 @@ function calc(){
   const pet=mains.find(l=>l.e.a==="459896");
   if(pet){
     const tap=mains.find(l=>l.ok && (l.e.a==="459616"||l.e.a==="459631"));
-    const why = $("ct30").checked ? "een CT thorax-abdomen (459616) of hals-thorax-abdomen (459631)" : (tap ? tap.code+" (ook op dezelfde dag)" : "");
-    if(why){
-      off(pet,`Niet aanrekenbaar binnen 30 dagen na ${why} (art. 17, in werking 1/07/2026). Vervangen door 459911.`);
-      const e11=EX.find(x=>x.a==="459911");
-      if(e11 && !mains.some(l=>l.e===e11)){
-        const {t,n}=rel(e11,kid);
-        const ln={lbl:e11.d, code:amb?e11.a:e11.h, sub:`N ${String(n).replace(".",",")} × ${nv(e11.nv)}`, f:t.f, r:R(t), e:e11, u:"N", n, main:true, ok:true,
-          why:"Aangerekend in plaats van 459896 wegens de 30-dagenregel. Vereist een PET-onderzoek dat minstens de thorax omvat (442971 of 442676)."};
-        lines.splice(lines.indexOf(pet)+1,0,ln); mains.push(ln);
-      }
-    }
-    notes.push("459896 mag enkel samen met een PET-onderzoek van art. 18 (442750, 442971 of 442713) en op voorschrift van een arts-specialist worden aangerekend.");
+    warns.push(`PET-CT: ${nomen("459896")} mag niet worden aangerekend binnen 30 dagen na een CT thorax-abdomen (459616) of hals-thorax-abdomen (459631), ook niet op dezelfde dag (art. 17, in werking 1/07/2026).`+
+      (tap?` <strong>${tap.code} staat in deze lijst.</strong>`:` Kreeg de patiënt zo'n CT in de voorbije 30 dagen, reken dan alleen het thoraxgedeelte aan (${nomen("459911")}, N 260).`)+
+      ` <button type="button" class="combo" data-combo="459911" data-parts="459896">Vervangen door 459911</button>`);
+    notes.push("459896 mag enkel samen met een PET-onderzoek van art. 18 (442750, 442971 of 442713) en op voorschrift van een arts-specialist; 459911 samen met 442971 of 442676.");
   }
   // 2e. CT: herhaling binnen 30 dagen, combinatiecodes
   if(mains.some(l=>isCT(l.e))){
@@ -509,7 +499,7 @@ $("q").addEventListener("keydown",ev=>{
 function setMode(m){ state.mode=m; $("mAmb").setAttribute("aria-pressed",m==="amb"); $("mHos").setAttribute("aria-pressed",m==="hos"); calc(); }
 document.querySelectorAll("[data-h]").forEach(b=>b.onclick=()=>{hosp=b.dataset.h;document.querySelectorAll("[data-h]").forEach(x=>x.setAttribute("aria-pressed",x===b));calc();});
 $("mAmb").onclick=()=>setMode("amb"); $("mHos").onclick=()=>setMode("hos");
-["acc","pref","kid","gmd","first","readm","urg","echoElders","ct30"].forEach(id=>$(id).addEventListener("change",calc));
+["acc","pref","kid","gmd","first","readm","urg","echoElders"].forEach(id=>$(id).addEventListener("change",calc));
 calc();
 
 // ---- tooltip met nomenclatuurtekst ----
